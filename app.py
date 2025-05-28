@@ -1,3 +1,4 @@
+import requests
 """Get word definitions
 Usage : The basic syntax of a URL request to the API is shown below:
 
