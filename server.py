@@ -1,38 +1,23 @@
-from flask import Flask, request, jsonify
+from mcp.server.fastmcp import FastMCP
+from app import getliveTemp
 import requests
 
-app = Flask(__name__)
+# Initialize MCP server
+mcp = FastMCP("weather-forecast-mcp")
 
-@app.route('/get_word_definition', methods=['POST'])
-def get_word_definition():
-    data = request.json
-    word = data.get('word')
-    if not word:
-        return jsonify({'error': 'word is required'}), 400
 
+
+@mcp.tool()
+async def get_word_definition(word: str) -> dict:
+    """
+    Get the definition of a word using dictionaryapi.dev.
+    """
     url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
-    resp = requests.get(url)
-    if resp.status_code != 200:
-        return jsonify({'error': 'Word not found or API error'}), 404
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {"error": f"Word not found or API error (status {response.status_code})"}
 
-    data = resp.json()
-    result = {
-        'word': data[0].get('word'),
-        'phonetic': data[0].get('phonetic'),
-        'origin': data[0].get('origin'),
-        'meanings': [
-            {
-                'partOfSpeech': m.get('partOfSpeech'),
-                'definitions': [
-                    {
-                        'definition': d.get('definition'),
-                        'example': d.get('example')
-                    } for d in m.get('definitions', [])
-                ]
-            } for m in data[0].get('meanings', [])
-        ]
-    }
-    return jsonify(result)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8081) 
+if __name__ == "__main__":
+    mcp.run(transport="stdio")
